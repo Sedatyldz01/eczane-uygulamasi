@@ -186,7 +186,13 @@ def index():
                                             </li>`;
                                         const marker = L.marker([eczane.lat, eczane.lng])
                                             .addTo(map)
-                                            .bindPopup(`<b>${eczane.isim}</b><br>${eczane.adres}<br><b>Stokta Olan:</b> ${eczane.stokta_olan.join(', ')}<br><b>Stokta Olmayan:</b> ${eczane.stokta_olmayan.join(', ')}`);
+                                            .bindPopup(`
+                                                <b>${eczane.isim}</b><br>
+                                                ${eczane.adres}<br>
+                                                <b>Stokta Olan:</b> ${eczane.stokta_olan.join(', ')}<br>
+                                                <b>Stokta Olmayan:</b> ${eczane.stokta_olmayan.join(', ')}<br>
+                                                <a href="https://maps.google.com/?q=${eczane.lat},${eczane.lng}" target="_blank" style="color: #007bff; text-decoration: none;">Yol Tarifi Al</a>
+                                            `);
                                         markers.push(marker);
                                         bounds.push([eczane.lat, eczane.lng]);
                                     });
