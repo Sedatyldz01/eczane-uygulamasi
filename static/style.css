@@ -1,0 +1,86 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f4f4f4;
+}
+
+h1, h2 {
+    color: #333;
+}
+
+input, select, button {
+    padding: 10px;
+    margin: 5px;
+    font-size: 16px;
+}
+
+button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #218838;
+}
+
+#sonuc {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: white;
+    border: 1px solid #ddd;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+li {
+    margin: 10px 0;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 5px;
+}
+
+li strong {
+    color: #007bff;
+    font-size: 18px;
+}
+
+.adres, .telefon, .ulasim {
+    color: #555;
+}
+
+.stok-baslik {
+    font-weight: bold;
+    margin-top: 5px;
+    display: block;
+}
+
+.stok-baslik.stok-olmayan-baslik {
+    color: #dc3545; /* Kırmızı */
+}
+
+.stok-liste {
+    padding-left: 20px;
+    margin: 5px 0;
+}
+
+.stok-liste.stok-olan li {
+    background-color: #e9ffe9; /* Açık yeşil */
+    border: none;
+    padding: 5px;
+    margin: 2px 0;
+    color: #28a745;
+}
+
+.stok-liste.stok-olmayan li {
+    background-color: #ffe9e9; /* Açık kırmızı */
+    border: none;
+    padding: 5px;
+    margin: 2px 0;
+    color: #dc3545;
+}
