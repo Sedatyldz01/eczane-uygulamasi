@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 
 def get_db_connection():
-    conn = sqlite3.connect('eczane.db')  # Yerel yol yerine relative path
+    conn = sqlite3.connect('eczane.db')
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -93,6 +93,7 @@ def index():
             <option value="">İlçe Seç</option>
         </select>
         <button onclick="ara()">Eczaneleri Bul</button>
+        <div id="loading" style="display: none;">Yükleniyor...</div>
         <div id="sonuc"></div>
         <div id="map" style="height: 400px; width: 100%; margin-top: 20px;"></div>
         
@@ -103,84 +104,107 @@ def index():
             };
             
             let map;
-let markers = []; // Marker’ları saklamak için dizi
+            let markers = [];
 
-map = L.map('map').setView([41.0082, 28.9784], 10);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap'
-}).addTo(map);
+            map = L.map('map').setView([41.0082, 28.9784], 10);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
 
-function ara() {
-    const kod = document.getElementById("receteKodu").value;
-    const il = document.getElementById("il").value;
-    const ilce = document.getElementById("ilce").value;
-    if (!il || !ilce || !kod) {
-        alert("Lütfen reçete kodu, il ve ilçe seçin!");
-        return;
-    }
-    
-    fetch(`/api/recete/${kod}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                document.getElementById("sonuc").innerHTML = "Reçete bulunamadı!";
-                return;
-            }
-            let html = `<h2>Reçetedeki İlaçlar (${data.ilaclar.length} adet):</h2><ul>`;
-            data.ilaclar.forEach(ilac => {
-                html += `<li>${ilac.isim} ${ilac.doz} - ${ilac.miktar}</li>`;
-            });
-            html += "</ul>";
-            document.getElementById("sonuc").innerHTML = html;
-            
-            fetch(`/api/eczaneler?il=${il}&ilce=${ilce}&recete_kodu=${kod}`)
-                .then(response => response.json())
-                .then(eczaneler => {
-                    if (eczaneler.error) {
-                        document.getElementById("sonuc").innerHTML += "<p>Eczane bulunamadı!</p>";
-                    } else {
-                        let eczaneHtml = "<h2>Eczaneler:</h2><ul>";
-                        // Önceki marker’ları temizle
-                        markers.forEach(marker => marker.remove());
-                        markers = [];
-                        
-                        map.setView([eczaneler[0].lat, eczaneler[0].lng], 14);
-                        eczaneler.forEach(eczane => {
-                            eczaneHtml += `
-                                <li>
-                                    <strong>${eczane.isim}</strong><br>
-                                    <span class="adres">Adres: ${eczane.adres}</span><br>
-                                    <span class="telefon">Telefon: ${eczane.telefon}</span><br>
-                                    <span class="stok-baslik">Stokta Olan (${eczane.stokta_olan.length} adet):</span>
-                                    <ul class="stok-liste stok-olan">
-                                        ${eczane.stokta_olan.map(i => `<li>${i}</li>`).join('')}
-                                    </ul>
-                                    <span class="stok-baslik stok-olmayan-baslik">Stokta Olmayan (${eczane.stokta_olmayan.length} adet):</span>
-                                    <ul class="stok-liste stok-olmayan">
-                                        ${eczane.stokta_olmayan.map(i => `<li>${i}</li>`).join('')}
-                                    </ul>
-                                    <span class="ulasim">Ulaşım:</span> 
-                                    Toplu Taşıma: ${eczane.ulasim.toplu_tasima}, 
-                                    Araç: ${eczane.ulasim.arac}, 
-                                    Yaya: ${eczane.ulasim.yaya}
-                                </li>`;
-                            const marker = L.marker([eczane.lat, eczane.lng])
-                                .addTo(map)
-                                .bindPopup(`<b>${eczane.isim}</b><br>${eczane.adres}<br>Stokta: ${eczane.stokta_olan.join(', ')}`);
-                            markers.push(marker); // Yeni marker’ı diziye ekle
+            document.getElementById("il").onchange = function() {
+                const il = this.value;
+                const ilceSelect = document.getElementById("ilce");
+                ilceSelect.innerHTML = '<option value="">İlçe Seç</option>';
+                if (il && iller[il]) {
+                    iller[il].forEach(ilce => {
+                        const option = document.createElement("option");
+                        option.value = ilce;
+                        option.text = ilce;
+                        ilceSelect.appendChild(option);
+                    });
+                }
+            };
+
+            function ara() {
+                const kod = document.getElementById("receteKodu").value;
+                const il = document.getElementById("il").value;
+                const ilce = document.getElementById("ilce").value;
+                if (!il || !ilce || !kod) {
+                    alert("Lütfen reçete kodu, il ve ilçe seçin!");
+                    return;
+                }
+                
+                document.getElementById("loading").style.display = "block";
+                document.getElementById("sonuc").innerHTML = "";
+                
+                fetch(`/api/recete/${kod}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            document.getElementById("sonuc").innerHTML = "Reçete bulunamadı!";
+                            document.getElementById("loading").style.display = "none";
+                            return;
+                        }
+                        let html = `<h2>Reçetedeki İlaçlar (${data.ilaclar.length} adet):</h2><ul>`;
+                        data.ilaclar.forEach(ilac => {
+                            html += `<li>${ilac.isim} ${ilac.doz} - ${ilac.miktar}</li>`;
                         });
-                        eczaneHtml += "</ul>";
-                        document.getElementById("sonuc").innerHTML += eczaneHtml;
-                    }
-                });
-        });
-}
+                        html += "</ul>";
+                        document.getElementById("sonuc").innerHTML = html;
+                        
+                        fetch(`/api/eczaneler?il=${il}&ilce=${ilce}&recete_kodu=${kod}`)
+                            .then(response => response.json())
+                            .then(eczaneler => {
+                                document.getElementById("loading").style.display = "none";
+                                if (eczaneler.error) {
+                                    document.getElementById("sonuc").innerHTML += "<p>Eczane bulunamadı!</p>";
+                                } else {
+                                    let eczaneHtml = "<h2>Eczaneler:</h2><ul>";
+                                    markers.forEach(marker => marker.remove());
+                                    markers = [];
+                                    const bounds = [];
+                                    
+                                    eczaneler.forEach(eczane => {
+                                        eczaneHtml += `
+                                            <li>
+                                                <strong>${eczane.isim}</strong><br>
+                                                <span class="adres">Adres: ${eczane.adres}</span><br>
+                                                <span class="telefon">Telefon: ${eczane.telefon}</span><br>
+                                                <span class="stok-baslik">Stokta Olan (${eczane.stokta_olan.length} adet):</span>
+                                                <ul class="stok-liste stok-olan">
+                                                    ${eczane.stokta_olan.map(i => `<li>${i}</li>`).join('')}
+                                                </ul>
+                                                <span class="stok-baslik stok-olmayan-baslik">Stokta Olmayan (${eczane.stokta_olmayan.length} adet):</span>
+                                                <ul class="stok-liste stok-olmayan">
+                                                    ${eczane.stokta_olmayan.map(i => `<li>${i}</li>`).join('')}
+                                                </ul>
+                                                <span class="ulasim">Ulaşım:</span> 
+                                                Toplu Taşıma: ${eczane.ulasim.toplu_tasima}, 
+                                                Araç: ${eczane.ulasim.arac}, 
+                                                Yaya: ${eczane.ulasim.yaya}
+                                            </li>`;
+                                        const marker = L.marker([eczane.lat, eczane.lng])
+                                            .addTo(map)
+                                            .bindPopup(`<b>${eczane.isim}</b><br>${eczane.adres}<br><b>Stokta Olan:</b> ${eczane.stokta_olan.join(', ')}<br><b>Stokta Olmayan:</b> ${eczane.stokta_olmayan.join(', ')}`);
+                                        markers.push(marker);
+                                        bounds.push([eczane.lat, eczane.lng]);
+                                    });
+                                    eczaneHtml += "</ul>";
+                                    document.getElementById("sonuc").innerHTML += eczaneHtml;
+                                    
+                                    if (bounds.length > 0) {
+                                        map.fitBounds(bounds, { padding: [50, 50] });
+                                    }
+                                }
+                            });
+                    });
+            }
         </script>
     </body>
     </html>
     '''
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))  # Render portunu dinamik al
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
